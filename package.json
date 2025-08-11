@@ -1,0 +1,42 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./index.js",
+    "dev": "nodemon ./index.js"
+  },
+  "author": "Zaman Ali",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@sparticuz/chromium": "^130.0.0",
+    "axios": "^1.11.0",
+    "bcryptjs": "^2.4.3",
+    "bull": "^4.16.4",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.1",
+    "fs": "^0.0.1-security",
+    "googleapis": "^144.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.18.0",
+    "mongoose": "^8.17.1",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^7.0.5",
+    "nodemon": "^3.1.7",
+    "os": "^0.1.2",
+    "p-limit": "^3.1.0",
+    "path": "^0.12.7",
+    "proxy-chain": "^2.5.9",
+    "puppeteer": "^19.11.1",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "redis": "^4.7.0",
+    "socket.io": "^4.8.1",
+    "user-agents": "^1.1.627"
+  }
+}
