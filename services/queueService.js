@@ -25,6 +25,7 @@ async function initQueue(mongoose, io) {
 
     try {
       await Project.findByIdAndUpdate(project._id, { status: "Running" });
+      io.emit("projectStatusUpdate", { projectId: project.projectId, status: "Running" });
       job.progress(10);
 
       const data = await searchGoogleMaps(project, io);
@@ -34,6 +35,7 @@ async function initQueue(mongoose, io) {
       if (!data || data.length === 0) {
         console.log("No data found, skipping this job.");
         await Project.findByIdAndUpdate(project._id, { status: "Finished" });
+        io.emit("projectStatusUpdate", { projectId: project.projectId, status: "Finished" });
         return done();
       }
 
@@ -47,12 +49,23 @@ async function initQueue(mongoose, io) {
 
       await Project.findByIdAndUpdate(project._id, { status: "Finished" });
       console.log("Job processed successfully");
+      io.emit("projectStatusUpdate", { projectId: project.projectId, status: "Finished" });
       done();
     } catch (error) {
       console.error("Error processing job:", error);
       await Project.findByIdAndUpdate(project._id, { status: "Failed" });
+      io.emit("projectStatusUpdate", { projectId: project.projectId, status: "Failed" });
       done(error);
     }
+  });
+   projectQueue.on("completed", (job) => {
+    console.log(`Job with ID ${job.id} completed`);
+    io.emit("projectStatusUpdate", { projectId: job.data.project.projectId, status: "Finished" });
+  });
+
+  projectQueue.on("failed", (job, err) => {
+    console.error(`Job with ID ${job.id} failed:`, err);
+    io.emit("projectStatusUpdate", { projectId: job.data.project.projectId, status: "Failed" });
   });
 }
 
@@ -103,12 +116,19 @@ async function resumeTask(projectId, id) {
 async function cancelTaskFromQueue(projectId) {
   try {
     console.log("Cancelling job for project ID:", projectId);
+     const project = await Project.findOne({ projectId });
+
+    if (!project) return console.log(`Project ${projectId} not found.`);
+    if (project.status === "Finished") return console.log(`Project ${projectId} already finished.`);
+
     await Project.findOneAndUpdate(
       { projectId },
       { cancelRequested: true, status: "Cancelled" },
       { new: true }
     );
 
+    // ✅ Emit cancel status
+    io.emit("projectStatusUpdate", { projectId, status: "Cancelled" });
     const jobs = await projectQueue.getJobs(["waiting", "active"]);
     const jobToCancel = jobs.find(
       (job) => job.data.project?.projectId === projectId
