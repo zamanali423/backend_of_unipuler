@@ -47,14 +47,26 @@ async function searchGoogleMaps(project, io) {
     await page.goto(searchUrl, { waitUntil: "networkidle2", timeout: 60000 });
 
     // Scroll feed
-    await page.evaluate(async () => {
-      const wrapper = document.querySelector('div[role="feed"]');
-      if (!wrapper) return;
-      for (let i = 0; i < 20; i++) {
-        wrapper.scrollBy(0, 1000);
-        await new Promise((res) => setTimeout(res, 1500));
+
+    for (let i = 0; i < 20; i++) {
+      if (await isCancelled()) {
+        console.log(`Project ${projectId} cancelled during scroll...`);
+        return;
       }
-    });
+      while (await isPaused()) {
+        console.log(`Project ${projectId} paused during scroll...`);
+        await new Promise((res) => setTimeout(res, 2000));
+      }
+
+      await page.evaluate(() => {
+        const wrapper = document.querySelector('div[role="feed"]');
+        if (wrapper) {
+          wrapper.scrollBy(0, 1000);
+        }
+      });
+
+      await new Promise((res) => setTimeout(res, 1500));
+    }
 
     const html = await page.content();
     await browser.close();
@@ -75,7 +87,8 @@ async function searchGoogleMaps(project, io) {
     for (let i = 0; i < parents.length; i++) {
       if (await isCancelled()) {
         console.log(`Project ${projectId} cancelled. Stopping scraping.`);
-        break;
+        await browser.close();
+        return;
       }
 
       while (await isPaused()) {
@@ -132,7 +145,6 @@ async function searchGoogleMaps(project, io) {
     await Promise.all(
       businesses.map((biz, index) =>
         limit(async () => {
-
           if (await isCancelled()) {
             console.log(`Project ${projectId} cancelled during enrichment.`);
             return;
@@ -142,7 +154,7 @@ async function searchGoogleMaps(project, io) {
             console.log(`Project ${projectId} paused during enrichment...`);
             await new Promise((res) => setTimeout(res, 2000));
           }
-          
+
           try {
             let enriched = { ...biz };
 

@@ -113,14 +113,17 @@ async function resumeTask(projectId, id) {
   console.log(`Resume requested for project ${projectId}`);
 }
 
-async function cancelTaskFromQueue(projectId) {
+async function cancelTaskFromQueue(projectId,io) {
   try {
     console.log("Cancelling job for project ID:", projectId);
      const project = await Project.findOne({ projectId });
 
     if (!project) return console.log(`Project ${projectId} not found.`);
-    if (project.status === "Finished") return console.log(`Project ${projectId} already finished.`);
-
+    if (project.status === "Finished") {
+       io.emit("projectStatusUpdate", { projectId, status: "Finished" });
+      return console.log(`Project ${projectId} already finished.`);
+    }
+    else{
     await Project.findOneAndUpdate(
       { projectId },
       { cancelRequested: true, status: "Cancelled" },
@@ -145,6 +148,7 @@ async function cancelTaskFromQueue(projectId) {
     } else {
       console.log(`No job found for ${projectId}`);
     }
+  }
   } catch (err) {
     console.error(`Error cancelling ${projectId}:`, err);
   }

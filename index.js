@@ -74,7 +74,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  handleRequests(socket);
+  handleRequests(socket,io);
 
   // Leave a project room
   socket.on("leave_project", ({ vendorId, projectCategory }) => {

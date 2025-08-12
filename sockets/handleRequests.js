@@ -7,9 +7,9 @@ const {
 } = require("../services/queueService");
 
 // perform all functions from socket
-const handleRequests = (socket) => {
+const handleRequests = (socket,io) => {
   socket.on("cancelTaskFromQueue", (projectId) => {
-    cancelTaskFromQueue(projectId);
+    cancelTaskFromQueue(projectId, io);
   });
   socket.on("pauseTask", (projectId) => {
     console.log("Pause projectId", projectId);

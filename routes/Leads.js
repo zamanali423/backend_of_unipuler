@@ -67,7 +67,7 @@ router.get("/specific-lead/:category", verifyToken, async (req, res) => {
 //! cancel leads
 router.get("/cancelLead", async (req, res) => {
   console.log("cancel id", req.query.projectId);
-  await cancelTaskFromQueue(req.query.projectId);
+  await cancelTaskFromQueue(req.query.projectId, req.io);
   res.status(200).json({ success: true, message: "lead cancelled" });
 });
 
