@@ -91,6 +91,7 @@ const initLeadStream = () => {
       const roomKey = getRoomKey(newLead.vendorId, newLead.projectCategory);
 
       console.log("📢 New lead inserted:", newLead);
+      io.to(roomKey).emit("lead", newLead);
 
       Lead.countDocuments({
         vendorId: newLead.vendorId,

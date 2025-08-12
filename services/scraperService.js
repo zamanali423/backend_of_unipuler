@@ -167,7 +167,8 @@ async function searchGoogleMaps(project, io) {
 
             if (io) {
               console.log(`emitting lead...`);
-              io.to(vendorId).emit("lead", lead);
+              const roomKey = getRoomKey(vendorId, projectCategory);
+              io.to(roomKey).emit("lead", lead);
             }
             console.log(
               `[${index + 1}/${businesses.length}] Saved lead: ${
