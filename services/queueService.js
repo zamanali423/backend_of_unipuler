@@ -1,7 +1,7 @@
 const Bull = require("bull");
 const Project = require("../models/Project");
 const { searchGoogleMaps } = require("./scraperService");
-
+const Lead = require("../models/Lead");
 console.log("Queue file loaded");
 
 const projectQueue = new Bull("projectQueue", {
@@ -25,7 +25,10 @@ async function initQueue(mongoose, io) {
 
     try {
       await Project.findByIdAndUpdate(project._id, { status: "Running" });
-      io.emit("projectStatusUpdate", { projectId: project.projectId, status: "Running" });
+      io.emit("projectStatusUpdate", {
+        projectId: project.projectId,
+        status: "Running",
+      });
       job.progress(10);
 
       const data = await searchGoogleMaps(project, io);
@@ -33,9 +36,20 @@ async function initQueue(mongoose, io) {
       job.progress(100);
 
       if (!data || data.length === 0) {
-        console.log("No data found, skipping this job.");
-        await Project.findByIdAndUpdate(project._id, { status: "Finished" });
-        io.emit("projectStatusUpdate", { projectId: project.projectId, status: "Finished" });
+        const latestProject = await Project.findById(project._id).lean();
+        if (latestProject.status == "Cancelled") {
+          await Project.findByIdAndUpdate(project._id, { status: "Cancelled" });
+          io.emit("projectStatusUpdate", {
+            projectId: project.projectId,
+            status: "Cancelled",
+          });
+        } else {
+          await Project.findByIdAndUpdate(project._id, { status: "Finished" });
+          io.emit("projectStatusUpdate", {
+            projectId: project.projectId,
+            status: "Finished",
+          });
+        }
         return done();
       }
 
@@ -46,26 +60,47 @@ async function initQueue(mongoose, io) {
       if (currentProjectStatus?.status === "Cancelled") {
         return done(); // Exit gracefully
       }
-
-      await Project.findByIdAndUpdate(project._id, { status: "Finished" });
-      console.log("Job processed successfully");
-      io.emit("projectStatusUpdate", { projectId: project.projectId, status: "Finished" });
+      const latestProject = await Project.findById(project._id).lean();
+      if (latestProject.status == "Cancelled" || latestProject.cancelRequested) {
+        await Project.findByIdAndUpdate(project._id, { status: "Cancelled" });
+        io.emit("projectStatusUpdate", {
+          projectId: project.projectId,
+          status: "Cancelled",
+        });
+      }
+      else{
+        await Project.findByIdAndUpdate(project._id, { status: "Finished" });
+        io.emit("projectStatusUpdate", {
+          projectId: project.projectId,
+          status: "Finished",
+        });
+      }
       done();
     } catch (error) {
       console.error("Error processing job:", error);
       await Project.findByIdAndUpdate(project._id, { status: "Failed" });
-      io.emit("projectStatusUpdate", { projectId: project.projectId, status: "Failed" });
+      io.emit("projectStatusUpdate", {
+        projectId: project.projectId,
+        status: "Failed",
+      });
       done(error);
     }
   });
-   projectQueue.on("completed", (job) => {
-    console.log(`Job with ID ${job.id} completed`);
-    io.emit("projectStatusUpdate", { projectId: job.data.project.projectId, status: "Finished" });
+projectQueue.on("completed", async (job) => {
+  const latest = await Project.findOne({ projectId: job.data.project.projectId }).lean();
+  io.emit("projectStatusUpdate", {
+    projectId: job.data.project.projectId,
+    status: latest?.status || "Finished",
   });
+});
+
 
   projectQueue.on("failed", (job, err) => {
     console.error(`Job with ID ${job.id} failed:`, err);
-    io.emit("projectStatusUpdate", { projectId: job.data.project.projectId, status: "Failed" });
+    io.emit("projectStatusUpdate", {
+      projectId: job.data.project.projectId,
+      status: "Failed",
+    });
   });
 }
 
@@ -113,25 +148,53 @@ async function resumeTask(projectId, id) {
   console.log(`Resume requested for project ${projectId}`);
 }
 
-async function cancelTaskFromQueue(projectId,io) {
+async function cancelTaskFromQueue(projectId, io) {
   try {
     console.log("Cancelling job for project ID:", projectId);
-     const project = await Project.findOne({ projectId });
 
-    if (!project) return console.log(`Project ${projectId} not found.`);
-    if (project.status === "Finished") {
-       io.emit("projectStatusUpdate", { projectId, status: "Finished" });
-      return console.log(`Project ${projectId} already finished.`);
+    const project = await Project.findOne({ projectId });
+    if (!project) {
+      console.log(`Project ${projectId} not found.`);
+      return;
     }
-    else{
-    await Project.findOneAndUpdate(
-      { projectId },
-      { cancelRequested: true, status: "Cancelled" },
-      { new: true }
-    );
 
-    // ✅ Emit cancel status
-    io.emit("projectStatusUpdate", { projectId, status: "Cancelled" });
+    // If project already finished, just emit finished
+    if (project.status === "Finished") {
+      io.emit("projectStatusUpdate", { projectId, status: "Finished" });
+      console.log(`Project ${projectId} already finished.`);
+      return;
+    }
+
+    // Count leads for this project
+    const leadsCount = await Lead.countDocuments({
+      vendorId: project.vendorId,
+      projectCategory: project.businessCategory,
+      // city: project.city, // only if needed
+    });
+    if (project.status === "Running") {
+      if (leadsCount > 0) {
+        // Leads available → treat as finished
+        await Project.findOneAndUpdate(
+          { projectId },
+          { cancelRequested: true, status: "Finished" },
+          { new: true }
+        );
+        io.emit("projectStatusUpdate", { projectId, status: "Finished" });
+        console.log(
+          `Project ${projectId} marked as Finished (Leads available: ${leadsCount})`
+        );
+      } else {
+        // No leads → treat as cancelled
+        await Project.findOneAndUpdate(
+          { projectId },
+          { cancelRequested: true, status: "Cancelled" },
+          { new: true }
+        );
+        io.emit("projectStatusUpdate", { projectId, status: "Cancelled" });
+        console.log(`Project ${projectId} marked as Cancelled (No leads)`);
+      }
+    }
+    // Remove job from queue if it's waiting
     const jobs = await projectQueue.getJobs(["waiting", "active"]);
     const jobToCancel = jobs.find(
       (job) => job.data.project?.projectId === projectId
@@ -143,12 +206,13 @@ async function cancelTaskFromQueue(projectId,io) {
         await jobToCancel.remove();
         console.log(`Removed waiting job for ${projectId}`);
       } else {
-        console.log(`Job for ${projectId} is active, will stop in scraper`);
+        console.log(
+          `Job for ${projectId} is active, scraper will stop in scraper`
+        );
       }
     } else {
       console.log(`No job found for ${projectId}`);
     }
-  }
   } catch (err) {
     console.error(`Error cancelling ${projectId}:`, err);
   }
