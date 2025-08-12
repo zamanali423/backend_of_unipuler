@@ -10,6 +10,7 @@ const { Server } = require("socket.io");
 const connectDB = require("./config/db");
 const { initQueue } = require("./services/queueService");
 const scrapingRoutes = require("./routes/scrapingRoutes");
+const getRoomKey = require("./utils/getRoomKey");
 
 // Routes
 const projectRoutes = require("./routes/projectRoutes");
@@ -56,13 +57,25 @@ app.use((err, req, res, next) => {
 io.on("connection", (socket) => {
   console.log(`Client connected: ${socket.id}`);
 
-  // Client joins a room for their vendor
-  socket.on("joinVendor", (vendorId) => {
-    socket.join(vendorId);
-    console.log(`Client ${socket.id} joined vendor room: ${vendorId}`);
+  socket.on("join_project", async ({ vendorId, projectCategory }) => {
+    const roomKey = getRoomKey(vendorId, projectCategory);
+    socket.join(roomKey);
+
+    console.log(`Client ${socket.id} joined room: ${roomKey}`);
+
+    try {
+      const totalLeads = await Lead.countDocuments({
+        vendorId,
+        projectCategory,
+      });
+      socket.emit("total_lead", { projectCategory, count: totalLeads });
+    } catch (err) {
+      console.error("Error fetching total leads:", err);
+    }
   });
 
   handleRequests(socket);
+
   socket.on("disconnect", () => {
     console.log(`Client disconnected: ${socket.id}`);
   });
@@ -75,10 +88,22 @@ const initLeadStream = () => {
   changeStream.on("change", (change) => {
     if (change.operationType === "insert") {
       const newLead = change.fullDocument;
+      const roomKey = getRoomKey(newLead.vendorId, newLead.projectCategory);
+
       console.log("📢 New lead inserted:", newLead);
 
-      // Send only to clients in the correct vendor room
-      io.to(newLead.vendorId).emit("lead", newLead);
+      Lead.countDocuments({
+        vendorId: newLead.vendorId,
+        projectCategory: newLead.projectCategory,
+      })
+        .then((count) => {
+          io.to(roomKey).emit("total_lead", {
+            projectCategory: newLead.projectCategory,
+            count,
+          });
+          console.log(`Total leads for ${roomKey}: ${count}`);
+        })
+        .catch((err) => console.error("Error counting leads:", err));
     }
   });
 };

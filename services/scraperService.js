@@ -168,12 +168,6 @@ async function searchGoogleMaps(project, io) {
             if (io) {
               console.log(`emitting lead...`);
               io.to(vendorId).emit("lead", lead);
-              // Count total leads in DB
-              const totalLeads = await Lead.countDocuments({
-                projectId: _id,
-                vendorId,
-              });
-              io.to(vendorId).emit("total_lead", totalLeads);
             }
             console.log(
               `[${index + 1}/${businesses.length}] Saved lead: ${

@@ -1,3 +1,4 @@
+const Lead = require("../models/Lead");
 const Project = require("../models/Project");
 const { addTaskToQueue } = require("../services/queueService");
 
