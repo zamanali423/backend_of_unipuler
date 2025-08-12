@@ -94,8 +94,9 @@ async function pauseTask(projectId) {
   console.log(`Pause requested for project ${projectId}`);
 }
 
-async function resumeTask(projectId) {
+async function resumeTask(projectId, id) {
   await Project.findOneAndUpdate({ projectId }, { pauseRequested: false });
+  await Project.findByIdAndUpdate({ _id: id }, { status: "Running" });
   console.log(`Resume requested for project ${projectId}`);
 }
 

@@ -16,7 +16,7 @@ const leadSchema = new mongoose.Schema({
   vendorId: String,
   about: String,
   logoUrl: String,
-  email: { type: String, index: true },// Indexed for faster lookup
+  email: { type: String},
   imageUrl: String,
   socialLinks: {
     youtube: String,

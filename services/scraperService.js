@@ -4,7 +4,7 @@ const stealthPlugin = require("puppeteer-extra-plugin-stealth");
 const Lead = require("../models/Lead");
 const { scrapeData } = require("./websiteScrapping");
 const Project = require("../models/Project");
-const pLimit = require("p-limit").default;
+const pLimit = require("p-limit");
 
 puppeteerExtra.use(stealthPlugin());
 
@@ -132,7 +132,6 @@ async function searchGoogleMaps(project, io) {
     await Promise.all(
       businesses.map((biz, index) =>
         limit(async () => {
-
           if (await isCancelled()) {
             console.log(`Project ${projectId} cancelled during enrichment.`);
             return;
@@ -142,7 +141,7 @@ async function searchGoogleMaps(project, io) {
             console.log(`Project ${projectId} paused during enrichment...`);
             await new Promise((res) => setTimeout(res, 2000));
           }
-          
+
           try {
             let enriched = { ...biz };
 
@@ -169,6 +168,12 @@ async function searchGoogleMaps(project, io) {
             if (io) {
               console.log(`emitting lead...`);
               io.to(vendorId).emit("lead", lead);
+              // Count total leads in DB
+              const totalLeads = await Lead.countDocuments({
+                projectId: _id,
+                vendorId,
+              });
+              io.to(vendorId).emit("total_lead", totalLeads);
             }
             console.log(
               `[${index + 1}/${businesses.length}] Saved lead: ${
