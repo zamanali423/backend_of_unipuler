@@ -76,6 +76,13 @@ io.on("connection", (socket) => {
 
   handleRequests(socket);
 
+  // Leave a project room
+  socket.on("leave_project", ({ vendorId, projectCategory }) => {
+    const roomKey = getRoomKey(vendorId, projectCategory);
+    socket.leave(roomKey);
+    console.log(`Socket ${socket.id} left room: ${roomKey}`);
+  });
+
   socket.on("disconnect", () => {
     console.log(`Client disconnected: ${socket.id}`);
   });
