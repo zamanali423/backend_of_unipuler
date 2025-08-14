@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-////hello zaman
+
 const jobSchema = new mongoose.Schema({
   source: { type: String, required: true }, // e.g. 'Indeed', 'LinkedIn'
   title: { type: String, required: true },
@@ -8,7 +8,8 @@ const jobSchema = new mongoose.Schema({
   link: { type: String, required: true },
   salary: { type: String },
   postedDate: { type: Date },
-  scrapedAt: { type: Date, default: Date.now }
+  scrapedAt: { type: Date, default: Date.now },
+  vendorId: { type: String },
 });
 
 // Prevent duplicates: unique combination of title, company, and link
