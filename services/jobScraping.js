@@ -414,8 +414,7 @@ async function scrapeSiteInPage(browser, site, vendorId, io) {
       //   { $set: doc },
       //   { upsert: true }
       // );
-      const job = new Job(doc);
-      await job.save();
+      const job = await Job.insertMany(doc, { ordered: false });
       savedCount += 1;
       if (io) {
         console.log(
@@ -451,7 +450,7 @@ function createJobScraperController(io) {
 
     try {
       browser = await puppeteer.launch({
-        headless: true,
+        headless: "new",
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",

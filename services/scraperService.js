@@ -8,7 +8,7 @@ const pLimit = require("p-limit");
 
 puppeteerExtra.use(stealthPlugin());
 
-async function searchGoogleMaps(project, io) {
+async function searchGoogleMaps(project, io, browser) {
   const { _id: projectId } = project;
   const start = Date.now();
   const { city, businessCategory, vendorId } = project;
@@ -25,16 +25,16 @@ async function searchGoogleMaps(project, io) {
   };
 
   try {
-    const browser = await puppeteerExtra.launch({
-      headless: "new",
-      ignoreHTTPSErrors: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
-    });
+    // const browser = await puppeteerExtra.launch({
+    //   headless: "new",
+    //   ignoreHTTPSErrors: true,
+    //   args: [
+    //     "--no-sandbox",
+    //     "--disable-setuid-sandbox",
+    //     "--disable-dev-shm-usage",
+    //     "--disable-gpu",
+    //   ],
+    // });
     console.log("Browser launched");
 
     const page = await browser.newPage();
@@ -58,10 +58,25 @@ async function searchGoogleMaps(project, io) {
         await new Promise((res) => setTimeout(res, 2000));
       }
 
-      await page.evaluate(() => {
-        const wrapper = document.querySelector('div[role="feed"]');
-        if (wrapper) {
-          wrapper.scrollBy(0, 1000);
+      // await page.evaluate(() => {
+      //   const wrapper = document.querySelector('div[role="feed"]');
+      //   if (wrapper) {
+      //     wrapper.scrollBy(0, 1000);
+      //   }
+      // });
+      await page.evaluate(async () => {
+        const feed = document.querySelector('div[role="feed"]');
+        let prevHeight = 0;
+        let sameCount = 0;
+
+        while (sameCount < 3) {
+          // stop if height doesn't change 3 times in a row
+          feed.scrollBy(0, 1000);
+          await new Promise((r) => setTimeout(r, 800));
+          let height = feed.scrollHeight;
+          if (height === prevHeight) sameCount++;
+          else sameCount = 0;
+          prevHeight = height;
         }
       });
 
@@ -84,60 +99,64 @@ async function searchGoogleMaps(project, io) {
     console.log("Number of businesses found:", parents.length);
 
     const businesses = [];
-    for (let i = 0; i < parents.length; i++) {
-      if (await isCancelled()) {
-        console.log(`Project ${projectId} cancelled. Stopping scraping.`);
-        await browser.close();
-        return;
-      }
+    await Promise.all(
+      parents.map((parent) =>
+        limit(async () => {
+          if (await isCancelled()) {
+            console.log(`Project ${projectId} cancelled. Stopping scraping.`);
+            await browser.close();
+            return;
+          }
 
-      while (await isPaused()) {
-        console.log(`Project ${projectId} paused... waiting`);
-        await new Promise((res) => setTimeout(res, 2000)); // check every 2s
-      }
-      const parent = parents[i];
-      const url = parent.find("a").attr("href");
-      const website = parent.find('a[data-value="Website"]').attr("href");
-      const storeName = parent.find("div.fontHeadlineSmall").text();
-      const ratingText = parent
-        .find("span.fontBodyMedium > span")
-        .attr("aria-label");
+          while (await isPaused()) {
+            console.log(`Project ${projectId} paused... waiting`);
+            await new Promise((res) => setTimeout(res, 2000)); // check every 2s
+          }
+          // const parent = parents[i];
+          const url = parent.find("a").attr("href");
+          const website = parent.find('a[data-value="Website"]').attr("href");
+          const storeName = parent.find("div.fontHeadlineSmall").text();
+          const ratingText = parent
+            .find("span.fontBodyMedium > span")
+            .attr("aria-label");
 
-      const bodyDiv = parent.find("div.fontBodyMedium").first();
-      const children = bodyDiv.children();
-      const firstOfLast = children.last().children().first();
-      const lastOfLast = children.last().children().last();
-      const imageUrl = parent.find("img").attr("src");
+          const bodyDiv = parent.find("div.fontBodyMedium").first();
+          const children = bodyDiv.children();
+          const firstOfLast = children.last().children().first();
+          const lastOfLast = children.last().children().last();
+          const imageUrl = parent.find("img").attr("src");
 
-      businesses.push({
-        placeId: url?.includes("ChI")
-          ? `ChI${url.split("ChI")[1]?.split("?")[0]}`
-          : null,
-        address: firstOfLast?.text() || "",
-        category: firstOfLast?.text()?.split("·")[0]?.trim() || "",
-        projectCategory: businessCategory,
-        phone: lastOfLast?.text()?.split("·")[1]?.trim() || "",
-        city:city,
-        googleUrl: url || "",
-        bizWebsite: website || "",
-        storeName: storeName || "",
-        ratingText: ratingText || "",
-        imageUrl: imageUrl || "",
-        vendorId,
-        stars: ratingText?.includes("stars")
-          ? Number(ratingText.split("stars")[0].trim())
-          : null,
-        numberOfReviews: (() => {
-          const reviewsText = ratingText
-            ?.split("stars")[1]
-            ?.replace("Reviews", "")
-            ?.trim();
-          return reviewsText && !isNaN(Number(reviewsText))
-            ? Number(reviewsText)
-            : 0;
-        })(),
-      });
-    }
+          businesses.push({
+            placeId: url?.includes("ChI")
+              ? `ChI${url.split("ChI")[1]?.split("?")[0]}`
+              : null,
+            address: firstOfLast?.text() || "",
+            category: firstOfLast?.text()?.split("·")[0]?.trim() || "",
+            projectCategory: businessCategory,
+            phone: lastOfLast?.text()?.split("·")[1]?.trim() || "",
+            city: city,
+            googleUrl: url || "",
+            bizWebsite: website || "",
+            storeName: storeName || "",
+            ratingText: ratingText || "",
+            imageUrl: imageUrl || "",
+            vendorId,
+            stars: ratingText?.includes("stars")
+              ? Number(ratingText.split("stars")[0].trim())
+              : null,
+            numberOfReviews: (() => {
+              const reviewsText = ratingText
+                ?.split("stars")[1]
+                ?.replace("Reviews", "")
+                ?.trim();
+              return reviewsText && !isNaN(Number(reviewsText))
+                ? Number(reviewsText)
+                : 0;
+            })(),
+          });
+        })
+      )
+    );
 
     await browser.close();
     console.log(`Found ${businesses.length} businesses`);
@@ -157,6 +176,12 @@ async function searchGoogleMaps(project, io) {
           }
 
           try {
+            const exists = await Lead.exists({
+              placeId: biz.placeId,
+              vendorId,
+            });
+            if (exists) return;
+
             let enriched = { ...biz };
 
             if (biz.bizWebsite) {
@@ -171,8 +196,8 @@ async function searchGoogleMaps(project, io) {
               };
             }
 
-            const lead = new Lead(enriched);
-            await lead.save();
+            const lead = await Lead.insertMany(enriched, { ordered: false });
+
             console.log(
               `lead saved... ${index + 1}/${businesses.length} ${
                 lead.storeName
@@ -200,8 +225,8 @@ async function searchGoogleMaps(project, io) {
         })
       )
     );
-
     console.log(`Time taken: ${Math.floor((Date.now() - start) / 1000)}s`);
+    return businesses;
   } catch (err) {
     console.error("Error in searchGoogleMaps:", err);
     throw err;

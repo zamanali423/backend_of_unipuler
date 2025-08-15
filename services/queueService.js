@@ -2,6 +2,9 @@ const Bull = require("bull");
 const Project = require("../models/Project");
 const { searchGoogleMaps } = require("./scraperService");
 const Lead = require("../models/Lead");
+const puppeteerExtra = require("puppeteer-extra");
+const stealthPlugin = require("puppeteer-extra-plugin-stealth");
+puppeteerExtra.use(stealthPlugin());
 console.log("Queue file loaded");
 
 const projectQueue = new Bull("projectQueue", {
@@ -18,8 +21,8 @@ async function initQueue(mongoose, io) {
   if (mongoose.connection.readyState !== 1) {
     throw new Error("MongoDB not connected");
   }
-
-  projectQueue.process(1, async (job, done) => {
+  let browser;
+  projectQueue.process(5, async (job, done) => {
     console.log("Processing job:", job.data);
     const { project } = job.data;
 
@@ -30,21 +33,37 @@ async function initQueue(mongoose, io) {
         status: "Running",
       });
       job.progress(10);
+      if (!browser) {
+        browser = await puppeteerExtra.launch({
+          headless: "new",
+          ignoreHTTPSErrors: true,
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+          ],
+        });
+      }
 
-      const data = await searchGoogleMaps(project, io);
+      const data = await searchGoogleMaps(project, io, browser);
       console.log("Google Maps data scraped:", data?.length);
       job.progress(100);
 
       if (!data || data.length === 0) {
         const latestProject = await Project.findById(project._id).lean();
         if (latestProject.status == "Cancelled") {
-          await Project.findByIdAndUpdate(project._id, { status: "Cancelled" });
+          await Project.findByIdAndUpdate(project._id, {
+            status: "Cancelled",
+          });
           io.emit("projectStatusUpdate", {
             projectId: project.projectId,
             status: "Cancelled",
           });
         } else {
-          await Project.findByIdAndUpdate(project._id, { status: "Finished" });
+          await Project.findByIdAndUpdate(project._id, {
+            status: "Finished",
+          });
           io.emit("projectStatusUpdate", {
             projectId: project.projectId,
             status: "Finished",
@@ -61,14 +80,16 @@ async function initQueue(mongoose, io) {
         return done(); // Exit gracefully
       }
       const latestProject = await Project.findById(project._id).lean();
-      if (latestProject.status == "Cancelled" || latestProject.cancelRequested) {
+      if (
+        latestProject.status == "Cancelled" ||
+        latestProject.cancelRequested
+      ) {
         await Project.findByIdAndUpdate(project._id, { status: "Cancelled" });
         io.emit("projectStatusUpdate", {
           projectId: project.projectId,
           status: "Cancelled",
         });
-      }
-      else{
+      } else {
         await Project.findByIdAndUpdate(project._id, { status: "Finished" });
         io.emit("projectStatusUpdate", {
           projectId: project.projectId,
@@ -86,14 +107,15 @@ async function initQueue(mongoose, io) {
       done(error);
     }
   });
-projectQueue.on("completed", async (job) => {
-  const latest = await Project.findOne({ projectId: job.data.project.projectId }).lean();
-  io.emit("projectStatusUpdate", {
-    projectId: job.data.project.projectId,
-    status: latest?.status || "Finished",
+  projectQueue.on("completed", async (job) => {
+    const latest = await Project.findOne({
+      projectId: job.data.project.projectId,
+    }).lean();
+    io.emit("projectStatusUpdate", {
+      projectId: job.data.project.projectId,
+      status: latest?.status || "Finished",
+    });
   });
-});
-
 
   projectQueue.on("failed", (job, err) => {
     console.error(`Job with ID ${job.id} failed:`, err);
@@ -101,6 +123,29 @@ projectQueue.on("completed", async (job) => {
       projectId: job.data.project.projectId,
       status: "Failed",
     });
+  });
+
+  projectQueue.on("completed", (job) => {
+    console.log(`Job with ID ${job.id} completed`);
+  });
+
+  projectQueue.on("failed", (job, err) => {
+    console.error(`Job with ID ${job.id} failed with error:`, err);
+  });
+
+  projectQueue.on("error", (error) => {
+    console.error("Queue encountered an error:", error);
+  });
+
+  process.on("SIGTERM", async () => {
+    console.log("Graceful shutdown initiated");
+    try {
+      await projectQueue.close();
+    } catch {}
+    try {
+      if (browser) await browser.close();
+    } catch {}
+    process.exit(0);
   });
 }
 
@@ -114,26 +159,17 @@ async function resumeQueue() {
   console.log("Queue resumed");
 }
 
-projectQueue.on("completed", (job) => {
-  console.log(`Job with ID ${job.id} completed`);
-});
-
-projectQueue.on("failed", (job, err) => {
-  console.error(`Job with ID ${job.id} failed with error:`, err);
-});
-
-projectQueue.on("error", (error) => {
-  console.error("Queue encountered an error:", error);
-});
-
-process.on("SIGTERM", async () => {
-  console.log("Graceful shutdown initiated");
-  await projectQueue.close();
-  process.exit(0);
-});
-
-function addTaskToQueue(project) {
-  projectQueue.add({ project });
+function addTaskToQueue(project, priority = 1) {
+  projectQueue.add(
+    { project },
+    { priority },
+    {
+      attempts: 2,
+      backoff: { type: "exponential", delay: 5000 },
+      removeOnComplete: true,
+      removeOnFail: false,
+    }
+  );
   console.log("Task added to the queue:", project);
 }
 
