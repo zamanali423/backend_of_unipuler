@@ -409,21 +409,21 @@ async function scrapeSiteInPage(browser, site, vendorId, io) {
         scrapedAt: new Date(),
       };
 
-      await Job.updateOne(
-        { vendorId, link: linkNorm },
-        { $set: doc },
-        { upsert: true }
-      );
-
+      // await Job.updateOne(
+      //   { vendorId, link: linkNorm },
+      //   { $set: doc },
+      //   { upsert: true }
+      // );
+      const job = new Job(doc);
+      await job.save();
       savedCount += 1;
       if (io) {
-        io.to(vendorId).emit("job", doc);
+        console.log(
+          `✅ [${vendorId}] ${site.name}: ${savedCount}/${items.length} saved`
+        );
+        io.to(vendorId).emit("job", job);
       }
     }
-
-    console.log(
-      `✅ [${vendorId}] ${site.name}: ${savedCount}/${items.length} saved`
-    );
     return savedCount;
   } catch (err) {
     console.warn(`⚠️  [${vendorId}] ${site.name} failed:`, err.message);

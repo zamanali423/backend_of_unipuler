@@ -16,12 +16,18 @@ const connection = (io) => {
   io.on("connection", (socket) => {
     console.log(`Client connected: ${socket.id}`);
 
+    // Client joins a room for their vendor
+    socket.on("joinVendor", (vendorId) => {
+      socket.join(vendorId);
+      console.log(`Client ${socket.id} joined vendor room: ${vendorId}`);
+    });
+
     // Join project room
     socket.on("join_project", async ({ vendorId, projectCategory }) => {
       const roomKey = getRoomKey(vendorId, projectCategory);
       socket.join(roomKey);
 
-      console.log(`Client ${socket.id} joined room: ${roomKey}`);
+      console.log(`Client ${socket.id} joined project room: ${roomKey}`);
 
       await countAndEmit(
         Lead,
@@ -34,10 +40,10 @@ const connection = (io) => {
 
     // Join job room
     socket.on("join_job", async ({ vendorId, title }) => {
-      const roomKey = getRoomKey(vendorId, title);
+      const roomKey = getRoomKey(vendorId, title || "*");
       socket.join(roomKey);
 
-      console.log(`Client ${socket.id} joined room: ${roomKey}`);
+      console.log(`Client ${socket.id} joined job room: ${roomKey}`);
 
       await countAndEmit(
         Job,
@@ -52,14 +58,14 @@ const connection = (io) => {
     socket.on("leave_project", ({ vendorId, projectCategory }) => {
       const roomKey = getRoomKey(vendorId, projectCategory);
       socket.leave(roomKey);
-      console.log(`Socket ${socket.id} left room: ${roomKey}`);
+      console.log(`Socket ${socket.id} left project room: ${roomKey}`);
     });
 
     // Leave job room
     socket.on("leave_job", ({ vendorId, title }) => {
-      const roomKey = getRoomKey(vendorId, title);
+      const roomKey = getRoomKey(vendorId, title || "*");
       socket.leave(roomKey);
-      console.log(`Socket ${socket.id} left room: ${roomKey}`);
+      console.log(`Socket ${socket.id} left job room: ${roomKey}`);
     });
 
     // Handle other requests
@@ -82,7 +88,7 @@ const initLeadStream = (io) => {
       const roomKey = getRoomKey(newLead.vendorId, newLead.projectCategory);
 
       console.log("📢 New lead inserted:", newLead);
-      io.to(roomKey).emit("lead", newLead);
+      io.to(newLead.vendorId).emit("lead", newLead);
 
       //for leads
       await countAndEmit(
@@ -109,7 +115,7 @@ const initJobStream = (io) => {
       const roomKey = getRoomKey(newJob.vendorId, newJob.title);
 
       console.log("📢 New job inserted:", newJob);
-      io.to(roomKey).emit("job", newJob);
+      io.to(newJob.vendorId).emit("job", newJob);
 
       //for jobs
       await countAndEmit(

@@ -1,11 +1,11 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const jobSchema = new mongoose.Schema({
-  source: { type: String, required: true }, // e.g. 'Indeed', 'LinkedIn'
-  title: { type: String, required: true },
+  source: { type: String }, // e.g. 'Indeed', 'LinkedIn'
+  title: { type: String },
   company: { type: String },
   location: { type: String },
-  link: { type: String, required: true },
+  link: { type: String },
   salary: { type: String },
   postedDate: { type: Date },
   scrapedAt: { type: Date, default: Date.now },
@@ -13,6 +13,6 @@ const jobSchema = new mongoose.Schema({
 });
 
 // Prevent duplicates: unique combination of title, company, and link
-jobSchema.index({ title: 1, company: 1, link: 1 }, { unique: true });
+// jobSchema.index({ title: 1, company: 1, link: 1 }, { unique: true });
 
-module.exports = mongoose.model('Job', jobSchema);
+module.exports = mongoose.model("Job", jobSchema);
