@@ -117,6 +117,7 @@ async function searchGoogleMaps(project, io) {
         category: firstOfLast?.text()?.split("·")[0]?.trim() || "",
         projectCategory: businessCategory,
         phone: lastOfLast?.text()?.split("·")[1]?.trim() || "",
+        city:city,
         googleUrl: url || "",
         bizWebsite: website || "",
         storeName: storeName || "",

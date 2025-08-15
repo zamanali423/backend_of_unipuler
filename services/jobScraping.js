@@ -478,14 +478,14 @@ function createJobScraperController(io) {
       io?.to(vendorId).emit("scrape_complete", {
         vendorId,
         jobTitle,
-        totalSaved,
-        perSite: sites.map((s, i) => ({ site: s.name, saved: counts[i] })),
+        // totalSaved,
+        // perSite: sites.map((s, i) => ({ site: s.name, saved: counts[i] })),
       });
 
       return res.json({
         message: "Scraping completed successfully",
-        totalSaved,
-        perSite: sites.map((s, i) => ({ site: s.name, saved: counts[i] })),
+        // totalSaved,
+        // perSite: sites.map((s, i) => ({ site: s.name, saved: counts[i] })),
       });
     } catch (err) {
       console.error("❌ Scraping failed:", err);
