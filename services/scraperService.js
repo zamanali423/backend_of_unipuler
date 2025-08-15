@@ -207,12 +207,19 @@ async function searchGoogleMaps(project, io, browser) {
             if (io) {
               console.log(`emitting lead...`);
               io.to(vendorId).emit("lead", lead);
+              // Emit to specific lead watchers
+              io.to(`lead_${lead.projectCategory}`).emit("lead_details", lead);
               // Count total leads in DB
               const totalLeads = await Lead.countDocuments({
                 projectId: _id,
                 vendorId,
               });
               io.to(vendorId).emit("total_lead", totalLeads);
+
+              // for specific category lead
+              // if (lead.projectCategory === businessCategory) {
+              //   io.to(vendorId).emit("category_lead", lead);
+              // }
             }
             console.log(
               `[${index + 1}/${businesses.length}] Saved lead: ${

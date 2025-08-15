@@ -22,6 +22,13 @@ const connection = (io) => {
       console.log(`Client ${socket.id} joined vendor room: ${vendorId}`);
     });
 
+    socket.on("join_lead", (projectCategory) => {
+      socket.join(`lead_${projectCategory}`);
+      console.log(
+        `Client ${socket.id} joined lead room: lead_${projectCategory}`
+      );
+    });
+
     // Join project room
     socket.on("join_project", async ({ vendorId, projectCategory }) => {
       const roomKey = getRoomKey(vendorId, projectCategory);
@@ -89,6 +96,15 @@ const initLeadStream = (io) => {
 
       console.log("📢 New lead inserted:", newLead);
       io.to(newLead.vendorId).emit("lead", newLead);
+
+      // Project category-specific emission
+      //   io.to(getRoomKey(newLead.vendorId, newLead.projectCategory)).emit(
+      //     "category_lead",
+      //     newLead
+      //   );
+
+      // Emit to lead-specific room
+      io.to(`lead_${newLead.projectCategory}`).emit("lead_details", newLead);
 
       //for leads
       await countAndEmit(
