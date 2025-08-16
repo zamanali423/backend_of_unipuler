@@ -92,6 +92,12 @@ await page.setViewport({ width: 1366, height: 768 });
 // Usage
       const html = await page.content();
 fs.writeFileSync('debug-after-wait.html', html);
+      const timestamp = Date.now();
+await page.screenshot({
+  path: `/var/www/html/snapshots/snapshot-${timestamp}.png`,
+  fullPage: true
+});
+console.log(`Screenshot saved: http://164.68.122.98/snapshots/snapshot-${timestamp}.png`);
 const pageType = await detectPageType(page);
 console.log("Page type:", pageType);
     
@@ -276,6 +282,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
