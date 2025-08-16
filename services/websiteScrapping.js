@@ -15,7 +15,7 @@ async function isWebsiteAvailable(url) {
 }
 
 async function scrapeData(url) {
-  puppeteerExtra.use(stealthPlugin());
+  // puppeteerExtra.use(stealthPlugin());
   // const browserPath = getLocalBrowserPath();
 
   // Launch Puppeteer with fallback for hosted environments
@@ -354,7 +354,7 @@ function constructAboutUsUrl(baseUrl) {
 async function safeNavigate(page, url, timeout) {
   try {
     // Navigate with custom timeout to avoid hanging forever
-    await page.goto(url, { waitUntil: "networkidle2", timeout });
+    await page.goto(url, { waitUntil: ["domcontentloaded", "load"], timeout });
   } catch (error) {
     console.error(`Navigation error at ${url}:`, error);
     throw new Error(`Failed to navigate to ${url} within ${timeout}ms`);

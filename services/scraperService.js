@@ -8,7 +8,7 @@ const pLimit = require("p-limit");
 
 puppeteerExtra.use(stealthPlugin());
 
-async function searchGoogleMaps(project, io, browser) {
+async function searchGoogleMaps(project, io) {
   const { _id: projectId } = project;
   const start = Date.now();
   const { city, businessCategory, vendorId } = project;
@@ -25,18 +25,19 @@ async function searchGoogleMaps(project, io, browser) {
   };
 
   try {
-    // const browser = await puppeteerExtra.launch({
-    //   headless: "new",
-    //   ignoreHTTPSErrors: true,
-    //   args: [
-    //     "--no-sandbox",
-    //     "--disable-setuid-sandbox",
-    //     "--disable-dev-shm-usage",
-    //     "--disable-gpu",
-    //   ],
-    // });
+    const browser = await puppeteerExtra.launch({
+      headless: "new",
+      ignoreHTTPSErrors: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
+    });
     console.log("Browser launched");
 
+    console.log("city and category", city, businessCategory);
     const page = await browser.newPage();
     const query = `${businessCategory} ${city}`;
     const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(
@@ -44,10 +45,12 @@ async function searchGoogleMaps(project, io, browser) {
     )}`;
     console.log(`Navigating: ${searchUrl}`);
 
-    await page.goto(searchUrl, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.goto(searchUrl, {
+      waitUntil: ["domcontentloaded", "load"],
+      timeout: 60000,
+    });
 
     // Scroll feed
-
     for (let i = 0; i < 20; i++) {
       if (await isCancelled()) {
         console.log(`Project ${projectId} cancelled during scroll...`);
@@ -176,11 +179,11 @@ async function searchGoogleMaps(project, io, browser) {
           }
 
           try {
-            const exists = await Lead.exists({
-              placeId: biz.placeId,
-              vendorId,
-            });
-            if (exists) return;
+            // const exists = await Lead.exists({
+            //   placeId: biz.placeId,
+            //   vendorId,
+            // });
+            // if (exists) return;
 
             let enriched = { ...biz };
 
