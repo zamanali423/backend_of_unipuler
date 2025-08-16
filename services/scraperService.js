@@ -67,7 +67,22 @@ async function searchGoogleMaps(project, io) {
       //     wrapper.scrollBy(0, 1000);
       //   }
       // });
-      await page.waitForSelector('div[role="feed"]', { timeout: 15000 });
+      async function detectPageType(page) {
+  if (await page.$('div[role="feed"]')) {
+    return "search_results";
+  }
+  if (await page.$('h1.DUwDvf')) {
+    return "single_place";
+  }
+  if (await page.$('div[aria-label="Directions"]')) {
+    return "directions";
+  }
+  return "unknown";
+}
+
+// Usage
+const pageType = await detectPageType(page);
+console.log("Page type:", pageType);
       await page.evaluate(async () => {
         const feed = document.querySelector('div[role="feed"]');
         let prevHeight = 0;
@@ -245,4 +260,5 @@ async function searchGoogleMaps(project, io) {
 }
 
 module.exports = { searchGoogleMaps };
+
 
