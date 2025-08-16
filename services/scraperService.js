@@ -58,14 +58,20 @@ await page.setViewport({ width: 1366, height: 768 });
       waitUntil: ["domcontentloaded", "load"],
       timeout: 60000,
     });
-try {
-    const [acceptButton] = await page.$x("//button[contains(text(), 'Accept All')]");
-    if (acceptButton) {
-      await acceptButton.click();
-      console.log('Clicked Accept All');
-      await page.waitForTimeout(1000); // wait for popup to disappear
+const accepted = await page.evaluate(() => {
+    const btn = Array.from(document.querySelectorAll('*'))
+      .find(el => el.textContent.trim() === 'Accept All');
+    if (btn) {
+      btn.click();
+      return true;
     }
-  } catch (err) {
+    return false;
+  });
+
+  if (accepted) {
+    console.log('Accepted cookies page');
+    await page.waitForNavigation({ waitUntil: 'domcontentloaded' });
+  } else {
     console.log('No Accept All button found');
   }
     // Scroll feed
@@ -291,6 +297,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
