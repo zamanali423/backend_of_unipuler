@@ -26,7 +26,7 @@ async function searchGoogleMaps(project, io) {
 
   try {
     const browser = await puppeteerExtra.launch({
-      headless: "new",
+      headless: "false",
       ignoreHTTPSErrors: true,
       args: [
         "--no-sandbox",
@@ -263,6 +263,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
