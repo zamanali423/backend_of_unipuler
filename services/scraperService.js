@@ -67,6 +67,7 @@ async function searchGoogleMaps(project, io) {
       //     wrapper.scrollBy(0, 1000);
       //   }
       // });
+      await page.waitForSelector('div[role="feed"]', { timeout: 15000 });
       await page.evaluate(async () => {
         const feed = document.querySelector('div[role="feed"]');
         let prevHeight = 0;
@@ -244,3 +245,4 @@ async function searchGoogleMaps(project, io) {
 }
 
 module.exports = { searchGoogleMaps };
+
