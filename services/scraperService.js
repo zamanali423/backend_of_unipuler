@@ -92,8 +92,7 @@ await page.setViewport({ width: 1366, height: 768 });
 // Usage
 const pageType = await detectPageType(page);
 console.log("Page type:", pageType);
-      const html = await page.content();
-console.log(html);  // prints to logs
+    
       await page.evaluate(async () => {
         const feed = document.querySelector('div[role="feed"]');
        if(feed){
@@ -275,6 +274,7 @@ console.log(html);  // prints to logs
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
