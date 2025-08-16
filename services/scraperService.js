@@ -85,6 +85,7 @@ const pageType = await detectPageType(page);
 console.log("Page type:", pageType);
       await page.evaluate(async () => {
         const feed = document.querySelector('div[role="feed"]');
+       if(feed){
         let prevHeight = 0;
         let sameCount = 0;
 
@@ -96,6 +97,8 @@ console.log("Page type:", pageType);
           if (height === prevHeight) sameCount++;
           else sameCount = 0;
           prevHeight = height;
+        }}else{
+         console.logs("no feed")
         }
       });
 
@@ -260,5 +263,6 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
