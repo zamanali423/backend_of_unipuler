@@ -51,7 +51,7 @@ await page.setViewport({ width: 1366, height: 768 });
     const query = `${businessCategory} ${city}`;
     const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(
       query
-    )}`;
+    )}?hl=en&gl=us`;
     console.log(`Navigating: ${searchUrl}`);
 
     await page.goto(searchUrl, {
@@ -274,6 +274,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
