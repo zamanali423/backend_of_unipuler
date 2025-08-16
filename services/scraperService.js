@@ -90,6 +90,8 @@ await page.setViewport({ width: 1366, height: 768 });
 }
 
 // Usage
+      const html = await page.content();
+fs.writeFileSync('debug-after-wait.html', html);
 const pageType = await detectPageType(page);
 console.log("Page type:", pageType);
     
@@ -274,6 +276,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
