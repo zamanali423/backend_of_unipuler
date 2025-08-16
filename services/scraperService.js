@@ -58,7 +58,16 @@ await page.setViewport({ width: 1366, height: 768 });
       waitUntil: ["domcontentloaded", "load"],
       timeout: 60000,
     });
-
+try {
+    const [acceptButton] = await page.$x("//button[contains(text(), 'Accept All')]");
+    if (acceptButton) {
+      await acceptButton.click();
+      console.log('Clicked Accept All');
+      await page.waitForTimeout(1000); // wait for popup to disappear
+    }
+  } catch (err) {
+    console.log('No Accept All button found');
+  }
     // Scroll feed
     for (let i = 0; i < 20; i++) {
       if (await isCancelled()) {
@@ -282,6 +291,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
