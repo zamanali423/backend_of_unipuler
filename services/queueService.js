@@ -30,7 +30,7 @@ function createProjectQueue(projectId, io) {
     console.log("Processing project:", project.projectId);
 
     try {
-      await Project.findByIdAndUpdate(project.projectId, { status: "Running" });
+      await Project.findByIdAndUpdate(project._id, { status: "Running" });
       io.emit("projectStatusUpdate", {
         projectId: project.projectId,
         status: "Running",
@@ -42,9 +42,9 @@ function createProjectQueue(projectId, io) {
       job.progress(100);
 
       if (!businesses || businesses.length === 0) {
-        const latest = await Project.findById(project.projectId).lean();
+        const latest = await Project.findById(project._id).lean();
         const status = latest.status === "Cancelled" ? "Cancelled" : "Finished";
-        await Project.findByIdAndUpdate(project.projectId, { status });
+        await Project.findByIdAndUpdate(project._id, { status });
         io.emit("projectStatusUpdate", {
           projectId: project.projectId,
           status,
@@ -52,15 +52,15 @@ function createProjectQueue(projectId, io) {
         return done();
       }
 
-      const latest = await Project.findById(project.projectId).lean();
+      const latest = await Project.findById(project._id).lean();
       if (latest.status === "Cancelled" || latest.cancelRequested) {
-        await Project.findByIdAndUpdate(project.projectId, { status: "Cancelled" });
+        await Project.findByIdAndUpdate(project._id, { status: "Cancelled" });
         io.emit("projectStatusUpdate", {
           projectId: project.projectId,
           status: "Cancelled",
         });
       } else {
-        await Project.findByIdAndUpdate(project.projectId, { status: "Finished" });
+        await Project.findByIdAndUpdate(project._id, { status: "Finished" });
         io.emit("projectStatusUpdate", {
           projectId: project.projectId,
           status: "Finished",
@@ -70,7 +70,7 @@ function createProjectQueue(projectId, io) {
       done();
     } catch (error) {
       console.error("Error processing job:", error);
-      await Project.findByIdAndUpdate(project.projectId, { status: "Failed" });
+      await Project.findByIdAndUpdate(project._id, { status: "Failed" });
       io.emit("projectStatusUpdate", {
         projectId: project.projectId,
         status: "Failed",
