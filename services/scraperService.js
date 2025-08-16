@@ -25,15 +25,17 @@ async function searchGoogleMaps(project, io) {
   };
 
   try {
-    const browser = await puppeteer.launch({
-  headless: false, // try headless: "new" if you want hidden
-  executablePath: "/usr/bin/google-chrome-stable", // make sure chrome is installed
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage"
-  ]
-});
+    const browser = await puppeteerExtra.launch({
+      headless: "new",
+      ignoreHTTPSErrors: true,
+executablePath: "/usr/bin/google-chrome-stable", // make sure chrome is installed
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
+    });
     console.log("Browser launched");
 
     console.log("city and category", city, businessCategory);
@@ -270,6 +272,7 @@ fs.writeFileSync('debug-after-wait.html', html);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
