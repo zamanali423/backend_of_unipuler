@@ -98,7 +98,7 @@ console.log("Page type:", pageType);
           else sameCount = 0;
           prevHeight = height;
         }}else{
-         console.logs("no feed")
+         console.log("no feed")
         }
       });
 
@@ -263,6 +263,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
