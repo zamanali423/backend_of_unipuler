@@ -40,6 +40,10 @@ executablePath: "/usr/bin/google-chrome-stable", // make sure chrome is installe
 
     console.log("city and category", city, businessCategory);
     const page = await browser.newPage();
+    const html = await page.content();
+if (html.includes("recaptcha") || html.includes("Our systems have detected unusual traffic")) {
+  console.log("🚨 CAPTCHA detected!");
+}
     await page.setUserAgent(
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36"
 );
@@ -272,6 +276,7 @@ fs.writeFileSync('debug-after-wait.html', html);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
