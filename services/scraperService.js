@@ -5,7 +5,7 @@ const Lead = require("../models/Lead");
 const { scrapeData } = require("./websiteScrapping");
 const Project = require("../models/Project");
 const pLimit = require("p-limit");
-
+const fs= require("fs");
 puppeteerExtra.use(stealthPlugin());
 
 async function searchGoogleMaps(project, io) {
@@ -100,7 +100,9 @@ console.log(html);  // prints to logs
           else sameCount = 0;
           prevHeight = height;
         }}else{
-         console.log("no feed")
+         console.log("no feed");
+         const html = await page.content();
+fs.writeFileSync('debug-after-wait.html', html);
         }
       });
 
@@ -265,6 +267,7 @@ console.log(html);  // prints to logs
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
