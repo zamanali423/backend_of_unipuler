@@ -110,8 +110,7 @@ console.log(html);  // prints to logs
           prevHeight = height;
         }}else{
          console.log("no feed");
-         const html = await document.content();
-fs.writeFileSync('debug-after-wait.html', html);
+         
         }
       });
 
@@ -276,6 +275,7 @@ fs.writeFileSync('debug-after-wait.html', html);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
