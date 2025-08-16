@@ -25,20 +25,23 @@ async function searchGoogleMaps(project, io) {
   };
 
   try {
-    const browser = await puppeteerExtra.launch({
-      headless: "new",
-      ignoreHTTPSErrors: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
-    });
+    const browser = await puppeteer.launch({
+  headless: false, // try headless: "new" if you want hidden
+  executablePath: "/usr/bin/google-chrome-stable", // make sure chrome is installed
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage"
+  ]
+});
     console.log("Browser launched");
 
     console.log("city and category", city, businessCategory);
     const page = await browser.newPage();
+    await page.setUserAgent(
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36"
+);
+await page.setViewport({ width: 1366, height: 768 });
     const query = `${businessCategory} ${city}`;
     const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(
       query
@@ -267,6 +270,7 @@ fs.writeFileSync('debug-after-wait.html', html);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
