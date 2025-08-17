@@ -129,10 +129,11 @@ console.log("Page type:", pageType);
 
 while (true) {
   const newHeight = await page.evaluate(async () => {
-    window.scrollBy(0, 1000);
-          await new Promise((res) => setTimeout(res, 1500));
+    const feed = document.querySelector('div[role="feed"]');
+    feed.scrollBy(0, 1000);
+    await new Promise((res) => setTimeout(res, 1500));
 
-    return document.body.scrollHeight;
+    return feed.scrollHeight;
   });
  console.log(oldHeight,newHeight)
   if (newHeight === oldHeight) break; // 👉 stop when no more content
@@ -307,6 +308,7 @@ await page.screenshot({
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
