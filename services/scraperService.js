@@ -61,7 +61,7 @@ await page.setViewport({ width: 1366, height: 768 });
 
     // Handle Google consent screen
 try {
-    await page.waitForSelector('button', { timeout: 10000 });
+    //await page.waitForSelector('button', { timeout: 10000 });
 
   const accepted = await page.evaluate(() => {
     const btn = Array.from(document.querySelectorAll('button'))
@@ -306,6 +306,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
