@@ -148,7 +148,7 @@ while (true) {
   if (total_page>=1000 || sameCount>=3) break; // 👉 stop when no more content
   oldHeight = newHeight;
 total_page++;
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(2000);
 }
 
 
@@ -318,6 +318,7 @@ await page.screenshot({
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
