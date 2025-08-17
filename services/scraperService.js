@@ -128,7 +128,7 @@ console.log("Page type:", pageType);
       let oldHeight = 0;
 
 while (true) {
-  const newHeight = await page.evaluate(() => {
+  const newHeight = await page.evaluate(async () => {
     window.scrollBy(0, window.innerHeight);
           await new Promise((res) => setTimeout(res, 1500));
 
@@ -302,6 +302,7 @@ while (true) {
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
