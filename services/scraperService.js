@@ -82,7 +82,8 @@ try {
 } catch (err) {
   console.log('No consent screen detected');
 }
-
+let prevHeight = 0;
+        let sameCount = 0;
     // Scroll feed
     for (let i = 0; i < 20; i++) {
       if (await isCancelled()) {
@@ -128,8 +129,7 @@ console.log("Page type:", pageType);
       await page.evaluate(async () => {
         const feed = document.querySelector('div[role="feed"]');
         if(feed){
-        let prevHeight = 0;
-        let sameCount = 0;
+        
 
         while (sameCount < 3) {
           // stop if height doesn't change 3 times in a row
@@ -306,6 +306,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
