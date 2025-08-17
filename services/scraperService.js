@@ -128,20 +128,35 @@ console.log("Page type:", pageType);
       let oldHeight = 0;
 
 while (true) {
-  const newHeight = await page.evaluate(async () => {
+  const oldCount = await page.$$eval('div[role="feed"] > div', els => els.length);
+  console.log("🔢 Current items:", oldCount);
+
+  // scroll down
+  await page.evaluate(() => {
     const feed = document.querySelector('div[role="feed"]');
     feed.scrollBy(0, feed.scrollHeight);
-    await new Promise((res) => setTimeout(res, 3500));
- console.log(feed.scrollHeight)
-
-    return feed.scrollHeight;
   });
- console.log(oldHeight,newHeight)
-  if (newHeight === oldHeight) break; // 👉 stop when no more content
-  oldHeight = newHeight;
+  console.log("📜 Scrolled feed…");
 
-  await page.waitForTimeout(1000);
+  // wait for spinner (loader) to disappear
+  try {
+    console.log("⏳ Waiting for loader to disappear…");
+    await page.waitForSelector('div[jscontroller="GgEuof"]', { hidden: true, timeout: 8000 });
+    console.log("✅ Loader hidden, checking new data…");
+  } catch {
+    console.log("⚠️ Loader not found → probably reached the end!");
+    break;
+  }
+
+  const newCount = await page.$$eval('div[role="feed"] > div', els => els.length);
+  console.log("🔢 New items:", newCount);
+
+  if (newCount === oldCount) {
+    console.log("🛑 No new items loaded → breaking loop.");
+    break;
+  }
 }
+
 
 
     // }
@@ -309,6 +324,7 @@ await page.screenshot({
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
