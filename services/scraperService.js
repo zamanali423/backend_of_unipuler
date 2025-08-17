@@ -114,8 +114,8 @@ try {
 }
 
 // Usage
-      const html = await page.content();
-fs.writeFileSync('debug-after-wait.html', html);
+//       const html = await page.content();
+// fs.writeFileSync('debug-after-wait.html', html);
       const timestamp = Date.now();
 await page.screenshot({
   path: `/var/www/html/snapshots/snapshot-${timestamp}.png`,
@@ -302,6 +302,7 @@ while (true) {
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
