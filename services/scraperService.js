@@ -58,9 +58,13 @@ await page.setViewport({ width: 1366, height: 768 });
       waitUntil: ["domcontentloaded", "load"],
       timeout: 60000,
     });
-const accepted = await page.evaluate(() => {
-    const btn = Array.from(document.querySelectorAll('*'))
-      .find(el => el.textContent.trim() === 'Accept All');
+
+    // Handle Google consent screen
+try {
+  await page.waitForSelector('button', { timeout: 10000 });
+  const accepted = await page.evaluate(() => {
+    const btn = Array.from(document.querySelectorAll('button'))
+      .find(el => el.textContent.trim().toLowerCase() === 'accept all');
     if (btn) {
       btn.click();
       return true;
@@ -69,11 +73,15 @@ const accepted = await page.evaluate(() => {
   });
 
   if (accepted) {
-    console.log('Accepted cookies page');
-    await page.waitForNavigation({ waitUntil: 'domcontentloaded' });
+    console.log('✅ Accepted cookies page');
+    await new Promise(res => setTimeout(res, 2000)); // short wait after click
   } else {
-    console.log('No Accept All button found');
+    console.log('No Accept all button found');
   }
+} catch (err) {
+  console.log('No consent screen detected');
+}
+
     // Scroll feed
     for (let i = 0; i < 20; i++) {
       if (await isCancelled()) {
@@ -297,6 +305,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
