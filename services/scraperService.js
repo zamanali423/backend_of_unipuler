@@ -134,7 +134,7 @@ while (true) {
 
     return document.body.scrollHeight;
   });
-
+ console.log(oldHeight,newHeight)
   if (newHeight === oldHeight) break; // 👉 stop when no more content
   oldHeight = newHeight;
 
@@ -302,6 +302,7 @@ while (true) {
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
