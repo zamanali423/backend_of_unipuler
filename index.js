@@ -27,6 +27,8 @@ const server = http.createServer(app);
 
 // Initialize Socket.IO
 const io = new Server(server, {
+    path: "/unipullar/socket.io",   // 👈 must match nginx + frontend
+
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
@@ -74,3 +76,4 @@ app.use((err, req, res, next) => {
     process.exit(1);
   }
 })();
+
