@@ -9,7 +9,7 @@ const fs= require("fs");
 puppeteerExtra.use(stealthPlugin());
 
 async function searchGoogleMaps(project, io) {
-  const { _id: projectId } = project;
+  const {  projectId } = project;
   const start = Date.now();
   const { city, businessCategory, vendorId } = project;
   const limit = pLimit(3); // concurrency limit
@@ -276,7 +276,7 @@ console.log("Page type:", pageType);
               io.to(`lead_${lead.projectCategory}`).emit("lead_details", lead);
               // Count total leads in DB
               const totalLeads = await Lead.countDocuments({
-                projectId: _id,
+                projectId: projectId,
                 vendorId,
               });
               io.to(vendorId).emit("total_lead", totalLeads);
@@ -306,6 +306,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
