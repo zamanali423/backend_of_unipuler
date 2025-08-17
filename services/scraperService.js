@@ -133,7 +133,7 @@ while (true) {
     const feed = document.querySelector('div[role="feed"]');
     feed.scrollBy(0, feed.scrollHeight);
 
-    await new Promise((res) => setTimeout(res, 5000));
+//    await new Promise((res) => setTimeout(res, 5000));
  console.log(feed.scrollHeight)
 
     return feed.scrollHeight;
@@ -312,6 +312,7 @@ await page.screenshot({
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
