@@ -84,7 +84,7 @@ try {
 }
 
     // Scroll feed
-    for (let i = 0; i < 20; i++) {
+    // for (let i = 0; i < 20; i++) {
       if (await isCancelled()) {
         console.log(`Project ${projectId} cancelled during scroll...`);
         return;
@@ -142,7 +142,7 @@ while (true) {
 }
 
 
-    }
+    // }
 
     const html = await page.content();
     await browser.close();
@@ -302,6 +302,7 @@ while (true) {
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
