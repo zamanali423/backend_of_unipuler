@@ -143,6 +143,11 @@ while (true) {
 
 
     // }
+await page.screenshot({
+  path: `/var/www/html/snapshots/snapshot-${timestamp}.png`,
+  fullPage: true
+});
+    console.log(`Screenshot saved: http://164.68.122.98/snapshots/snapshot-${timestamp}.png`);
 
     const html = await page.content();
     await browser.close();
@@ -302,6 +307,7 @@ while (true) {
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
