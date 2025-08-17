@@ -140,7 +140,7 @@ while (true) {
     return feed.scrollHeight;
   });
  console.log(oldHeight,newHeight)
-  if(oldHeight==newHeight{
+  if(oldHeight==newHeight){
   sameCount++;
   }
   if (total_page>=1000 || sameCount>=3) break; // 👉 stop when no more content
@@ -316,6 +316,7 @@ await page.screenshot({
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
