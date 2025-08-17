@@ -142,6 +142,8 @@ while (true) {
  console.log(oldHeight,newHeight)
   if(oldHeight==newHeight){
   sameCount++;
+  }else{
+  sameCount=0
   }
   if (total_page>=1000 || sameCount>=3) break; // 👉 stop when no more content
   oldHeight = newHeight;
@@ -316,6 +318,7 @@ await page.screenshot({
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
