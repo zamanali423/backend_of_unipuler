@@ -9,7 +9,7 @@ const fs= require("fs");
 puppeteerExtra.use(stealthPlugin());
 
 async function searchGoogleMaps(project, io) {
-  const {  projectId } = project;
+  const {  _id:projectId } = project;
   const start = Date.now();
   const { city, businessCategory, vendorId } = project;
   const limit = pLimit(3); // concurrency limit
@@ -82,8 +82,7 @@ try {
 } catch (err) {
   console.log('No consent screen detected');
 }
-let prevHeight = 0;
-        let sameCount = 0;
+
     // Scroll feed
     for (let i = 0; i < 20; i++) {
       if (await isCancelled()) {
@@ -129,17 +128,17 @@ console.log("Page type:", pageType);
       await page.evaluate(async () => {
         const feed = document.querySelector('div[role="feed"]');
         if(feed){
-        
+        let prevHeight = 0;
+  let sameCount = 0;
 
-        while (sameCount < 3) {
-          // stop if height doesn't change 3 times in a row
-          feed.scrollBy(0, 1000);
-          await new Promise((r) => setTimeout(r, 800));
-          let height = feed.scrollHeight;
-          if (height === prevHeight) sameCount++;
-          else sameCount = 0;
-          prevHeight = height;
-        }
+         while (sameCount < 3) {
+    feed.scrollBy(0, 1000);
+    await new Promise(r => setTimeout(r, 800));
+    const height = feed.scrollHeight;
+    if (height === prevHeight) sameCount++;
+    else sameCount = 0;
+    prevHeight = height;
+  }
         }else{
           console.log("No feed")
         }
@@ -306,6 +305,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
