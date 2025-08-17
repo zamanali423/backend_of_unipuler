@@ -61,7 +61,6 @@ await page.setViewport({ width: 1366, height: 768 });
 
     // Handle Google consent screen
 try {
-  await page.waitForSelector('button', { timeout: 10000 });
   const accepted = await page.evaluate(() => {
     const btn = Array.from(document.querySelectorAll('button'))
       .find(el => el.textContent.trim().toLowerCase() === 'accept all');
@@ -126,7 +125,7 @@ console.log("Page type:", pageType);
     
       await page.evaluate(async () => {
         const feed = document.querySelector('div[role="feed"]');
-       if(feed){
+       
         let prevHeight = 0;
         let sameCount = 0;
 
@@ -138,9 +137,6 @@ console.log("Page type:", pageType);
           if (height === prevHeight) sameCount++;
           else sameCount = 0;
           prevHeight = height;
-        }}else{
-         console.log("no feed");
-         
         }
       });
 
@@ -305,6 +301,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
