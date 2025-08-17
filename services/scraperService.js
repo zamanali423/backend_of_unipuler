@@ -125,26 +125,23 @@ console.log(`Screenshot saved: http://164.68.122.98/snapshots/snapshot-${timesta
 const pageType = await detectPageType(page);
 console.log("Page type:", pageType);
     
-      await page.evaluate(async () => {
-        const feed = document.querySelector('div[role="feed"]');
-        if(feed){
-        let prevHeight = 0;
-  let sameCount = 0;
+      let oldHeight = 0;
 
-         while (sameCount < 3) {
-    feed.scrollBy(0, 1000);
-    await new Promise(r => setTimeout(r, 800));
-    const height = feed.scrollHeight;
-    if (height === prevHeight) sameCount++;
-    else sameCount = 0;
-    prevHeight = height;
-  }
-        }else{
-          console.log("No feed")
-        }
-      });
+while (true) {
+  const newHeight = await page.evaluate(() => {
+    window.scrollBy(0, window.innerHeight);
+          await new Promise((res) => setTimeout(res, 1500));
 
-      await new Promise((res) => setTimeout(res, 1500));
+    return document.body.scrollHeight;
+  });
+
+  if (newHeight === oldHeight) break; // 👉 stop when no more content
+  oldHeight = newHeight;
+
+  await page.waitForTimeout(1000);
+}
+
+
     }
 
     const html = await page.content();
@@ -305,6 +302,7 @@ console.log("Page type:", pageType);
 }
 
 module.exports = { searchGoogleMaps };
+
 
 
 
