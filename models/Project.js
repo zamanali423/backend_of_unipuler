@@ -5,7 +5,8 @@ const ProjectSchema = new mongoose.Schema(
     vendorId: { type: String },
     projectId: { type: String, required: true, unique: true },
     projectName: { type: String },
-    city: { type: String, required: true },
+    city: { type: String },
+    country: { type: String, required: true },
     businessCategory: { type: String, required: true },
     status: {
       type: String,

@@ -5,13 +5,13 @@ const Lead = require("../models/Lead");
 const { scrapeData } = require("./websiteScrapping");
 const Project = require("../models/Project");
 const pLimit = require("p-limit");
-const fs= require("fs");
+const fs = require("fs");
 puppeteerExtra.use(stealthPlugin());
 
 async function searchGoogleMaps(project, io) {
-  const {  _id:projectId } = project;
+  const { _id: projectId } = project;
   const start = Date.now();
-  const { city, businessCategory, vendorId } = project;
+  const { city, businessCategory, vendorId, country } = project;
   const limit = pLimit(3); // concurrency limit
 
   const isCancelled = async () => {
@@ -28,7 +28,7 @@ async function searchGoogleMaps(project, io) {
     const browser = await puppeteerExtra.launch({
       headless: "new",
       ignoreHTTPSErrors: true,
-executablePath: "/usr/bin/google-chrome-stable", // make sure chrome is installed
+      executablePath: "/usr/bin/google-chrome-stable", // make sure chrome is installed
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -38,17 +38,20 @@ executablePath: "/usr/bin/google-chrome-stable", // make sure chrome is installe
     });
     console.log("Browser launched");
 
-    console.log("city and category", city, businessCategory);
+    console.log("city and category", city, businessCategory, country);
     const page = await browser.newPage();
     const htmltest = await page.content();
-if (htmltest.includes("recaptcha") || htmltest.includes("Our systems have detected unusual traffic")) {
-  console.log("🚨 CAPTCHA detected!");
-}
+    if (
+      htmltest.includes("recaptcha") ||
+      htmltest.includes("Our systems have detected unusual traffic")
+    ) {
+      console.log("🚨 CAPTCHA detected!");
+    }
     await page.setUserAgent(
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36"
-);
-await page.setViewport({ width: 1366, height: 768 });
-    const query = `${businessCategory} ${city}`;
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36"
+    );
+    await page.setViewport({ width: 1366, height: 768 });
+    const query = `${businessCategory} ${country} ${city}`;
     const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(
       query
     )}?hl=en&gl=us`;
@@ -60,105 +63,108 @@ await page.setViewport({ width: 1366, height: 768 });
     });
 
     // Handle Google consent screen
-try {
-    //await page.waitForSelector('button', { timeout: 10000 });
+    try {
+      //await page.waitForSelector('button', { timeout: 10000 });
 
-  const accepted = await page.evaluate(() => {
-    const btn = Array.from(document.querySelectorAll('button'))
-      .find(el => el.textContent.trim().toLowerCase() === 'accept all');
-    if (btn) {
-      btn.click();
-      return true;
+      const accepted = await page.evaluate(() => {
+        const btn = Array.from(document.querySelectorAll("button")).find(
+          (el) => el.textContent.trim().toLowerCase() === "accept all"
+        );
+        if (btn) {
+          btn.click();
+          return true;
+        }
+        return false;
+      });
+
+      if (accepted) {
+        console.log("✅ Accepted cookies page");
+        await new Promise((res) => setTimeout(res, 2000)); // short wait after click
+      } else {
+        console.log("No Accept all button found");
+      }
+    } catch (err) {
+      console.log("No consent screen detected");
     }
-    return false;
-  });
-
-  if (accepted) {
-    console.log('✅ Accepted cookies page');
-    await new Promise(res => setTimeout(res, 2000)); // short wait after click
-  } else {
-    console.log('No Accept all button found');
-  }
-} catch (err) {
-  console.log('No consent screen detected');
-}
 
     // Scroll feed
     // for (let i = 0; i < 20; i++) {
-      if (await isCancelled()) {
-        console.log(`Project ${projectId} cancelled during scroll...`);
-        return;
+    if (await isCancelled()) {
+      console.log(`Project ${projectId} cancelled during scroll...`);
+      return;
+    }
+    while (await isPaused()) {
+      console.log(`Project ${projectId} paused during scroll...`);
+      await new Promise((res) => setTimeout(res, 2000));
+    }
+
+    // await page.evaluate(() => {
+    //   const wrapper = document.querySelector('div[role="feed"]');
+    //   if (wrapper) {
+    //     wrapper.scrollBy(0, 1000);
+    //   }
+    // });
+    async function detectPageType(page) {
+      if (await page.$('div[role="feed"]')) {
+        return "search_results";
       }
-      while (await isPaused()) {
-        console.log(`Project ${projectId} paused during scroll...`);
-        await new Promise((res) => setTimeout(res, 2000));
+      if (await page.$("h1.DUwDvf")) {
+        return "single_place";
       }
+      if (await page.$('div[aria-label="Directions"]')) {
+        return "directions";
+      }
+      return "unknown";
+    }
 
-      // await page.evaluate(() => {
-      //   const wrapper = document.querySelector('div[role="feed"]');
-      //   if (wrapper) {
-      //     wrapper.scrollBy(0, 1000);
-      //   }
-      // });
-      async function detectPageType(page) {
-  if (await page.$('div[role="feed"]')) {
-    return "search_results";
-  }
-  if (await page.$('h1.DUwDvf')) {
-    return "single_place";
-  }
-  if (await page.$('div[aria-label="Directions"]')) {
-    return "directions";
-  }
-  return "unknown";
-}
+    // Usage
+    //       const html = await page.content();
+    // fs.writeFileSync('debug-after-wait.html', html);
+    const timestamp = Date.now();
+    await page.screenshot({
+      path: `/var/www/html/snapshots/snapshot-${timestamp}.png`,
+      fullPage: true,
+    });
+    console.log(
+      `Screenshot saved: http://164.68.122.98/snapshots/snapshot-${timestamp}.png`
+    );
+    const pageType = await detectPageType(page);
+    console.log("Page type:", pageType);
 
-// Usage
-//       const html = await page.content();
-// fs.writeFileSync('debug-after-wait.html', html);
-      const timestamp = Date.now();
-await page.screenshot({
-  path: `/var/www/html/snapshots/snapshot-${timestamp}.png`,
-  fullPage: true
-});
-console.log(`Screenshot saved: http://164.68.122.98/snapshots/snapshot-${timestamp}.png`);
-const pageType = await detectPageType(page);
-console.log("Page type:", pageType);
-    
-      let oldHeight = 0;
-      let total_page = 0;
-      let sameCount = 0;
+    let oldHeight = 0;
+    let total_page = 0;
+    let sameCount = 0;
 
-while (true) {
-  const newHeight = await page.evaluate(async () => {
-    const feed = document.querySelector('div[role="feed"]');
-    feed.scrollBy(0, feed.scrollHeight);
+    while (true) {
+      const newHeight = await page.evaluate(async () => {
+        const feed = document.querySelector('div[role="feed"]');
+        feed.scrollBy(0, feed.scrollHeight);
 
-//    await new Promise((res) => setTimeout(res, 5000));
- console.log(feed.scrollHeight)
+        //    await new Promise((res) => setTimeout(res, 5000));
+        console.log(feed.scrollHeight);
 
-    return feed.scrollHeight;
-  });
- console.log(oldHeight,newHeight)
-  if(oldHeight==newHeight){
-  sameCount++;
-  }else{
-  sameCount=0
-  }
-  if (total_page>=1000 || sameCount>=5) break; // 👉 stop when no more content
-  oldHeight = newHeight;
-total_page++;
-  await page.waitForTimeout(1500);
-}
-
-
+        return feed.scrollHeight;
+      });
+      console.log(oldHeight, newHeight);
+      if (oldHeight == newHeight) {
+        sameCount++;
+      } else {
+        sameCount = 0;
+      }
+      if (total_page >= 1000 || sameCount >= 5) break; // 👉 stop when no more content
+      oldHeight = newHeight;
+      total_page++;
+      await page.waitForTimeout(1500);
+    }
 
     // }
-await page.screenshot({
-  path: `/var/www/html/snapshots/snapshot-${timestamp}.png`,
-  fullPage: true
-});
-    console.log(`Screenshot saved: http://164.68.122.98/snapshots/snapshot-${timestamp}.png`);
+    await page.screenshot({
+      path: `/var/www/html/snapshots/snapshot-${timestamp}.png`,
+      fullPage: true,
+    });
+    console.log(
+      `Screenshot saved: http://164.68.122.98/snapshots/snapshot-${timestamp}.png`
+    );
 
     const html = await page.content();
     await browser.close();
@@ -318,52 +324,3 @@ await page.screenshot({
 }
 
 module.exports = { searchGoogleMaps };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
