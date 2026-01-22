@@ -6,13 +6,13 @@ const verifyToken = require("../../../middleware/verifyToken");
 const generateToken = require("../../../authentication/generateToken");
 const bcryptjs = require("bcryptjs");
 const sendOtpEmail = require("../../../authentication/sendOtpEmail");
+const { allUsers, updateUserProfile } = require("../../../controllers/admin/users");
 
 // Register Admin
 router.post("/admin-register", async (req, res) => {
   const { email, otp } = req.body;
 
   try {
-
     if (!isValidEmail(email)) {
       return res.status(400).json({
         msg: "Invalid email domain. Only .edu, .org, .com or gmail.com allowed.",
@@ -21,7 +21,9 @@ router.post("/admin-register", async (req, res) => {
     const admin = await Admin.findOne({ email });
 
     if (!admin || !admin.otp) {
-      return res.status(400).json({ msg: "No pending registration for this email" });
+      return res
+        .status(400)
+        .json({ msg: "No pending registration for this email" });
     }
 
     if (admin.otp !== otp || admin.otpExpires < Date.now()) {
@@ -60,7 +62,7 @@ router.post("/send-otp", async (req, res) => {
     }
 
     let admin = await Admin.findOne({ email });
-   
+
     // If admin exists and already verified
     if (admin && !admin.otp) {
       return res.status(400).json({ msg: "Email already registered" });
@@ -69,7 +71,9 @@ router.post("/send-otp", async (req, res) => {
     // If admin exists and still pending OTP
     if (admin && admin.otp) {
       await sendOtpEmail(admin.email, admin.otp);
-      return res.status(200).json({ msg: "OTP already sent. Please check your email." });
+      return res
+        .status(200)
+        .json({ msg: "OTP already sent. Please check your email." });
     }
 
     // Generate OTP and save temp user
@@ -87,12 +91,16 @@ router.post("/send-otp", async (req, res) => {
 
     await sendOtpEmail(email, generatedOtp);
     await newAdmin.save();
-   const token=await generateToken(newAdmin);
-   
-    return res.status(200).json({ msg: "OTP sent to email" ,token,user: {
-    username: newAdmin.username,
-    email: newAdmin.email,
-  }});
+    const token = await generateToken(newAdmin);
+
+    return res.status(200).json({
+      msg: "OTP sent to email",
+      token,
+      user: {
+        username: newAdmin.username,
+        email: newAdmin.email,
+      },
+    });
   } catch (error) {
     console.error("Error in /send-otp:", error);
     return res.status(500).json({ msg: "Internal Server Error" });
@@ -229,39 +237,7 @@ router.get("/getUser", verifyToken, async (req, res) => {
 });
 
 // User profile update route
-router.put("/updateUserProfile/:email", verifyToken, async (req, res) => {
-  const { newEmail } = req.params;
-  const { username, email, password } = req.body;
-
-  try {
-    const hashedPassword = await bcryptjs.hash(password, 10);
-
-    const query = { newEmail };
-    const update = {
-      username,
-      email,
-      password: hashedPassword,
-    };
-    const options = { new: true, runValidators: true };
-
-    const user =
-      (await Vendor.findOneAndUpdate(query, update, options)) ||
-      (await Admin.findOneAndUpdate(query, update, options));
-
-    if (!user) {
-      return res.status(404).json({ msg: "User not found" });
-    }
-
-    const token = await generateToken(user);
-    return res.status(200).json({
-      user: { id: user._id, username: user.username, email: user.email },
-      token,
-    });
-  } catch (error) {
-    console.error("Error updating user profile:", error.message);
-    return res.status(500).json({ msg: "Internal Server Error" });
-  }
-});
+router.put("/updateUserProfile/:email", verifyToken, updateUserProfile);
 
 const generateOtp = () => {
   const Otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -273,5 +249,7 @@ function isValidEmail(email) {
     /^[a-zA-Z0-9._%+-]+@(?:gmail\.com|[a-zA-Z0-9.-]+\.(edu|org|com))$/;
   return regex.test(email);
 }
+
+router.get("/user-data", verifyToken, allUsers);
 
 module.exports = router;
