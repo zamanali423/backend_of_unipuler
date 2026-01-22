@@ -14,9 +14,9 @@ const allUsers = async (req, res) => {
     const emails = users.map((user) => user.email);
 
     // Query related data using the extracted emails
-    const jobsData = await jobs.countDocuments({ vendorId: { $in: emails } });
-    const leadsData = await Lead.countDocuments({ vendorId: { $in: emails } });
-    const projectsData = await Project.countDocuments({
+    const jobsData = await jobs.find({ vendorId: { $in: emails } });
+    const leadsData = await Lead.find({ vendorId: { $in: emails } });
+    const projectsData = await Project.find({
       vendorId: { $in: emails },
     });
     res.status(200).json({
@@ -33,25 +33,25 @@ const allUsers = async (req, res) => {
 const updateUserProfile = async (req, res) => {
   const { email: paramEmail } = req.params; // This is the email in the route parameter
   const { username, email: bodyEmail, password } = req.body; // These are from the request body
-  
+
   try {
     const hashedPassword = await bcryptjs.hash(password, 10);
 
     // Update query to use the route parameter email to find the user
     const query = { email: paramEmail };
     const update = {};
-    
+
     // Build update object conditionally
     if (username) update.username = username;
     if (bodyEmail) update.email = bodyEmail; // Use email from body if provided
     if (password) update.password = hashedPassword;
-    
+
     const options = { new: true, runValidators: true };
 
     // Try to update in both collections
-    const Vendor = require('../../models/customerData/customerData');
-    const Admin = require('../../models/adminData/adminData');
-    
+    const Vendor = require("../../models/customerData/customerData");
+    const Admin = require("../../models/adminData/adminData");
+
     const user =
       (await Vendor.findOneAndUpdate(query, update, options)) ||
       (await Admin.findOneAndUpdate(query, update, options));
@@ -60,9 +60,9 @@ const updateUserProfile = async (req, res) => {
       return res.status(404).json({ msg: "User not found" });
     }
 
-    const generateToken = require('../../authentication/generateToken');
+    const generateToken = require("../../authentication/generateToken");
     const token = await generateToken(user);
-    
+
     return res.status(200).json({
       user: { id: user._id, username: user.username, email: user.email },
       token,
