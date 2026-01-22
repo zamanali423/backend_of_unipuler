@@ -13,6 +13,7 @@ const {
   jobsDetails,
   leadsDetails,
   projectsDetails,
+  addAdmin,
 } = require("../../../controllers/admin/users");
 const isAdmin = require("../../../middleware/isAdmin");
 
@@ -222,7 +223,7 @@ router.post("/login", async (req, res) => {
 
     return res.status(200).json({
       msg: "Login Successfully",
-      user: { id: user._id, username: user.username, email: user.email },
+      user: { id: user._id, username: user.username, email: user.email, role: user.role },
       token,
     });
   } catch (error) {
@@ -259,6 +260,8 @@ function isValidEmail(email) {
   return regex.test(email);
 }
 
+// Add Admin Route
+router.post("/addAdmin",addAdmin);
 router.get("/user-data", verifyToken, allUsers);
 router.delete("/deleteUser/:email", verifyToken, isAdmin, deleteUser);
 router.get("/jobs-details", verifyToken, isAdmin, jobsDetails);

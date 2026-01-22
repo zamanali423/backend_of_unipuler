@@ -146,6 +146,16 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const addAdmin = async (req, res) => {
+  const { username, email, password } = req.body;
+  try {
+    const savedAdmin = await adminData.create({ username, email, password });
+    res.status(201).json({ message: "Admin added successfully", savedAdmin });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   allUsers,
   updateUserProfile,
@@ -153,4 +163,5 @@ module.exports = {
   jobsDetails,
   leadsDetails,
   projectsDetails,
+  addAdmin,
 };
