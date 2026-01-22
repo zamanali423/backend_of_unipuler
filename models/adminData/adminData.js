@@ -15,9 +15,10 @@ const adminSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  otp:{type:String},
-  otpExpires:{type:String},
-  phone:{type:Number},
+  otp: { type: String },
+  otpExpires: { type: String },
+  phone: { type: Number },
+  role: { type: String, default: "user" },
   tokens: [
     {
       token: {

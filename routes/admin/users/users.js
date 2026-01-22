@@ -6,7 +6,16 @@ const verifyToken = require("../../../middleware/verifyToken");
 const generateToken = require("../../../authentication/generateToken");
 const bcryptjs = require("bcryptjs");
 const sendOtpEmail = require("../../../authentication/sendOtpEmail");
-const { allUsers, updateUserProfile } = require("../../../controllers/admin/users");
+const {
+  allUsers,
+  updateUserProfile,
+  deleteUser,
+  jobsDetails,
+  leadsDetails,
+  projectsDetails,
+} = require("../../../controllers/admin/users");
+const isAdmin = require("../../../middleware/isAdmin");
+
 
 // Register Admin
 router.post("/admin-register", async (req, res) => {
@@ -251,5 +260,9 @@ function isValidEmail(email) {
 }
 
 router.get("/user-data", verifyToken, allUsers);
+router.delete("/deleteUser/:email", verifyToken, isAdmin, deleteUser);
+router.get("/jobs-details", verifyToken, isAdmin, jobsDetails);
+router.get("/leads-details", verifyToken, isAdmin, leadsDetails);
+router.get("/projects-details", verifyToken, isAdmin, projectsDetails);
 
 module.exports = router;
